@@ -200,7 +200,7 @@ var $VG = (function() {
     SVGPath.prototype.cBezTo = function(x1, y1, x2, y2, x3, y3) { return this.addPath('C', x1, y1, x2, y2, x3, y3); };
     SVGPath.prototype.cBezBy = function(x1, y1, x2, y2, x3, y3) { return this.addPath('c', x1, y1, x2, y2, x3, y3); };
     SVGPath.prototype.close = function() { return this.addPath('Z'); };
-    SVGPath.prototype.clear = function() { this.element.removeAttribute('d', ''); return this; };
+    SVGPath.prototype.clear = function() { this.element.removeAttribute('d'); return this; };
     
     function SVGText(el) { SVGHandler.call(this, el); }
     SVGText.prototype = new SVGShape();

@@ -23,7 +23,7 @@ $VG('<ellipse>').stroke('black').strokeWidth(2).dashArray(4, 4).fill('yellow').p
 $VG('<ellipse cx="250" cy="50" rx="10" ry="10" fill="red" stroke="black" stroke-width="2"/>').appendTo(svg);
 
 // path && collection
-svg.addPath().moveTo(10, 110).lineTo(90, 110).lineTo(10, 190);
+svg.addPath().moveTo(10, 110).lineTo(90, 110).lineTo(10, 190).close();
 svg.addPath().moveTo(110, 110).lineBy(0, 80).lineBy(80, 0);
 $VG('<path>').moveTo(210, 110).cBezTo(210, 150, 290, 150, 290, 190).appendTo(svg);
 
@@ -33,6 +33,7 @@ svg.addText().text('BsideSoft x Pikicast').pos(10, 250).fontFamily('Courier New'
 
 // collection
 svg.find('path').stroke('blue').strokeWidth(3).dashArray(1, 4).lineCap('round').lineJoin('round').fill('yellow');
+svg.find('path')[2].fill('none');
 $VG('ellipse').css('opacity', '0.2');
 
 // group
