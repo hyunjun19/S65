@@ -1,223 +1,219 @@
-var SVG = (function(ns) {
-    var nsSVG = 'http://www.w3.org/2000/svg'
-    var nsXlink = 'http://www.w3.org/1999/xlink';
-    var pool = [];
+var $VG = (function() {
+    var nsSVG = 'http://www.w3.org/2000/svg',
+        nsXlink = 'http://www.w3.org/1999/xlink',
+        buffer = document.createElementNS(nsSVG, 'svg'),
+        types = {
+            'svg': SVGRoot,
+            'g': SVGGroup,
+            'line': SVGLine,
+            'rect': SVGRect,
+            'ellipse': SVGEllipse,
+            'path': SVGPath,
+            'text': SVGText
+        };
     
-    // common methods
-    var SVGCommon = {
-        create: function(tag) {
-            for(var i in pool)
-                if(pool[i].tagName == tag.toLowerCase)
-                    return pool.splice(i, 1)[0];
-            return document.createElementNS(nsSVG, tag);
-        },
-        setParent: function(p) { this.parent = p; return this; },
-        id: function(str) { this.element.setAttribute('id', str); return this; },
-        css: function(st, def) { this.element.style[st] = def; return this; },
-        cssText: function(str) { this.element.style.cssText = str; return this; },
-        className: function(str) { this.element.className.baseVal = str; return this; },
-        release: function() {
-            this.element.parentElement.removeChild(this.element);
-            this.parent && this.parent.removeChild(this);
-            pool.push(this.element);
-            this.element = null;
-        },
-        fill: function(fill, fillrule) {
-            fill && this.element.setAttribute('fill', fill);
-            fillrule && this.element.setAttribute('fill-rule', fillrule);
-            return this;
-        },
-        stroke: function(color, width, dasharray, linecap, linejoin) {
-            color && this.element.setAttribute('stroke', color);
-            width && this.element.setAttribute('stroke-width', width);
-            dasharray && this.element.setAttribute('stroke-dasharray', dasharray);
-            linecap && this.element.setAttribute('stroke-linecap', linecap);
-            linejoin && this.element.setAttribute('stroke-linejoin', linejoin);
-            return this;
-        }
-    };
-    
-    // SVG root
-    var SVGRoot = function(el) {
-        if(this instanceof SVGRoot) {
-            if(typeof el=='string') el = document.getElementById(el);
-            !el && (el = SVGCommon.create('svg'));
-            if(el instanceof SVGElement) {
-                this.element = el;
-                this.children = [];
-                return this;
+    // svg factory function
+    function SVGFactory(t) {
+        t = t || '<svg>';
+        if(t instanceof SVGHandler) {
+            return t;
+        } else if(this instanceof SVGFactory) {
+            var r = /<.*>/g.exec(t);
+            if(r instanceof Array) {
+                buffer.innerHTML = r[0];
+                t = buffer.firstElementChild;
+            } else if(typeof t == 'string') {
+                return new SVGCollection(document.querySelectorAll(t));
             }
-            throw new Error();
+            
+            if(!types[t.tagName]) throw new Error(t.tagName + ' is not a valid SVG element!');
+            return new types[t.tagName](t);
+        } else {
+            return new SVGFactory(t);
         }
-        return new SVGRoot(el);
+    }
+    
+    // svg collection
+    function SVGCollection(l) {
+        for(var i=0; i<l.length; ++i)
+            this[i] = SVGFactory(l[i]);
+        this.length = l.length;
+    }
+    var iterator = function(fn) {
+        return function() {
+            var ret = [], i;
+            for(i=0; i<this.length; i++)
+                this[i][fn] && ret.push(this[i][fn].apply(this[i], arguments));
+            return new SVGCollection(ret);
+        };
     };
-    SVGRoot.prototype = {
-        id: SVGCommon.id,
-        css: SVGCommon.css,
-        cssText: SVGCommon.cssText,
-        viewBox: function(t, l, w, h) {
-            this.element.setAttribute('viewBox', [t, l, w, h].join(' '));
-            return this;
-        },
-        appendTo: function(el) {
-            if(typeof el=='string') el = document.querySelector(el);
-            if(el instanceof HTMLElement) {
-                el.appendChild(this.element);
-                return this;
-            }
-            throw new Error();
-        },
-        release: SVGCommon.release,
-        child: function(hint) { return this.children[hint]; },
-        removeChild: function(svgElement) {
-            for(var i in this.children)
-                if(this._child(i) == svgElement)
-                    this.children.splice(i, 1)[0].release();
-            return this;
-        },
-        
-        // add shapes
-        _add: function(shape) {
-            this.element.appendChild(shape.element);
-            this.children.push(shape);
-            shape.setParent(this);
-            return shape;
-        },
-        addLine: function() { return this._add(new SVGLine()); },
-        addRect: function() { return this._add(new SVGRect()); },
-        addEllipse: function() { return this._add(new SVGEllipse()); },
-        addPath: function() { return this._add(new SVGPath()); },
-        addGroup: function() { return this._add(new SVGGroup()); }
+    SVGCollection.prototype = {
+        forEach: Array.prototype.forEach,
+        filter: Array.prototype.filter,
+        first: function() { return this[0]; },
+        css: iterator('css'),
+        id: iterator('id'),
+        className: iterator('className'),
+        fill: iterator('fill'),
+        fillRule: iterator('fillRule'),
+        stroke: iterator('stroke'),
+        strokeWidth: iterator('strokeWidth'),
+        dashArray: iterator('dashArray'),
+        lineCap: iterator('lineCap'),
+        lineJoin: iterator('lineJoin'),
+        appendTo: iterator('appendTo'),
+        before: iterator('before'),
+        after: iterator('after')
     };
     
-    // line
-    var SVGLine = function() { this.element = SVGCommon.create('line'); };
-    SVGLine.prototype = {
-        setParent: SVGCommon.setParent,
-        id: SVGCommon.id,
-        css: SVGCommon.css,
-        cssText: SVGCommon.cssText,
-        className: SVGCommon.className,
-        release: SVGCommon.release,
-        fill: SVGCommon.fill,
-        stroke: SVGCommon.stroke,
-        pos: function(x1, y1, x2, y2) {
-            this.element.setAttribute('x1', x1);
-            this.element.setAttribute('y1', y1);
-            this.element.setAttribute('x2', x2);
-            this.element.setAttribute('y2', y2);
-            return this;
-        }
-    };
-    
-    // rect
-    var SVGRect = function() { this.element = SVGCommon.create('rect'); };
-    SVGRect.prototype = {
-        setParent: SVGCommon.setParent,
-        id: SVGCommon.id,
-        css: SVGCommon.css,
-        cssText: SVGCommon.cssText,
-        className: SVGCommon.className,
-        release: SVGCommon.release,
-        fill: SVGCommon.fill,
-        stroke: SVGCommon.stroke,
-        pos: function(x, y, width, height) {
-            this.element.setAttribute('x', x);
-            this.element.setAttribute('y', y);
-            this.element.setAttribute('width', width);
-            this.element.setAttribute('height', height);
+    // base constructor
+    function SVGHandler(el) { this.element = el; }
+    SVGHandler.prototype = {
+        attr: function(k, v) {
+            if(k instanceof Object)
+                for(var kk in k)
+                    this.element.setAttribute(kk, k[kk]);
+            else if(typeof v == 'undefined')
+                return this.element.getAttribute(k) || '';
+            else
+                this.element.setAttribute(k, v);
             return this;
         },
-        radius: function(rx, ry) {
-            this.element.setAttribute('rx', rx);
-            this.element.setAttribute('ry', ry || rx);
+        css: function(k, v) {
+            if(k instanceof Object)
+                for(var kk in k)
+                    this.element.style[kk] = k[kk];
+            else if(typeof v == 'undefined')
+                return this.element.style[k];
+            else
+                this.element.style[k] = v;
             return this;
-        }
-    };
-    
-    // ellipse
-    var SVGEllipse = function() { this.element = SVGCommon.create('ellipse'); };
-    SVGEllipse.prototype = {
-        setParent: SVGCommon.setParent,
-        id: SVGCommon.id,
-        css: SVGCommon.css,
-        cssText: SVGCommon.cssText,
-        className: SVGCommon.className,
-        release: SVGCommon.release,
-        fill: SVGCommon.fill,
-        stroke: SVGCommon.stroke,
-        pos: function(cx, cy, rx, ry) {
-            this.element.setAttribute('cx', cx);
-            this.element.setAttribute('cy', cy);
-            this.element.setAttribute('rx', rx);
-            this.element.setAttribute('ry', ry || rx);
+        },
+        id: function(v) { return this.attr('id', v); },
+        className: function(v) { this.element.className.baseVal = v; return this; },
+        appendTo: function(t) {
+            t = SVGFactory(t);
+            if(t instanceof SVGParent)
+                t.element.appendChild(this.element);
+            else
+               throw new Error('cannot append SVG element to a HTMLElement');
             return this;
+        },
+        before: function(t) {
+            t = SVGFactory(t);
+            if(t instanceof SVGHandler)
+                this.element.insertBefore(t.element);
+            return this;
+        },
+        after: function(t) {
+            t = SVGFactory(t);
+            if(t instanceof SVGHandler)
+                this.element.insertAfter(t.element);
         }
     };
     
-    // path
-    var SVGPath = function() {
-        this.element = SVGCommon.create('path');
-        this.path = [];
+    // common props for SVG shapes
+    function SVGShape() {}
+    SVGShape.prototype = new SVGHandler();
+    SVGShape.prototype.fill = function(v) { return this.css('fill', v); };
+    SVGShape.prototype.fillRule = function(v) { return this.css('fill-rule', v); };
+    SVGShape.prototype.stroke = function(v) { return this.css('stroke', v); }; // TODO: stroke parser 만들어야징
+    SVGShape.prototype.strokeWidth = function(v) { return this.css('stroke-width', v); };
+    SVGShape.prototype.dashArray = function() { return this.css('stroke-dasharray', [].slice.call(arguments).join(' ')); };
+    SVGShape.prototype.lineCap = function(v) { return this.css('stroke-linecap', v); };
+    SVGShape.prototype.lineJoin = function(v) { return this.css('stroke-linejoin', v); };
+    
+    // common props for <svg>, <g>
+    function SVGParent() {}
+    SVGParent.prototype = new SVGHandler();
+    SVGParent.prototype.children = function() {
+        return new SVGCollection(this.element.children);
     };
-    SVGPath.prototype = {
-        setParent: SVGCommon.setParent,
-        id: SVGCommon.id,
-        css: SVGCommon.css,
-        cssText: SVGCommon.cssText,
-        className: SVGCommon.className,
-        release: SVGCommon.release,
-        fill: SVGCommon.fill,
-        stroke: SVGCommon.stroke,
-        _addCommand: function(cmd, arg) {
-            this.path.push({ cmd: cmd, arg: arg });
-            this._draw();
-            return this;
-        },
-        _draw: function() {
-            var d = '';
-            this.path.forEach(function(data) {
-                d += data.cmd + data.arg.join(' ') + ' ';
-            });
-            this.element.setAttribute('d', d);
-        },
-        moveTo: function(x, y) { return this._addCommand('M', [x, y]); },
-        moveBy: function(x, y) { return this._addCommand('m', [x, y]); },
-        lineTo: function(x, y) { return this._addCommand('L', [x, y]); },
-        lineBy: function(x, y) { return this._addCommand('l', [x, y]); },
-        qBezTo: function(x1, y1, x2, y2) { return this._addCommand('Q', [x1, y1, x2, y2]); },
-        qBezBy: function(x1, y1, x2, y2) { return this._addCommand('q', [x1, y1, x2, y2]); },
-        cBezTo: function(x1, y1, x2, y2, x3, y3) { return this._addCommand('C', [x1, y1, x2, y2, x3, y3]); },
-        cBezBy: function(x1, y1, x2, y2, x3, y3) { return this._addCommand('c', [x1, y1, x2, y2, x3, y3]); },
-        close: function() { return this._addCommand('Z', []); },
-        clear: function() { this.path=[]; return this; }
-        
+    SVGParent.prototype.find = function(q) {
+        if(!q) return this.children();
+        return new SVGCollection(this.element.querySelectorAll(q));
+    };
+    SVGParent.prototype.append = function(t) {
+        return SVGFactory(t).appendTo(this);
+    };
+    SVGParent.prototype.remove = function(t) {
+        SVGFactory(t).appendTo(buffer);
+        return this;
+    };
+    SVGParent.prototype.addLine = function() { return this.append('<line>'); };
+    SVGParent.prototype.addRect = function() { return this.append('<rect>'); };
+    SVGParent.prototype.addEllipse = function() { return this.append('<ellipse>'); };
+    SVGParent.prototype.addPath = function() { return this.append('<path>'); };
+    SVGParent.prototype.addText = function() { return this.append('<text>'); };
+    //SVGParent.prototype.addImage = function() { return this.append('<image>'); };
+    SVGParent.prototype.addGroup = function() { return this.append('<g>'); };
+    
+    /**
+     * implementations
+     **********************************/
+    function SVGRoot(el) { SVGHandler.call(this, el); }
+    SVGRoot.prototype = new SVGParent();
+    SVGRoot.prototype.viewBox = function(t, l, w, h) { return this.attr('viewBox', [t, l, w, h].join(' ')); };
+    // override
+    SVGRoot.prototype.appendTo = function(t) {
+        if(typeof t == 'string')
+            t = document.getElementById(t) || document.querySelector(t);
+        if(t instanceof HTMLElement)
+            t.appendChild(this.element);
+        else
+            throw new Error('<svg> must be appended to a HTMLElement');
+        return this;
     };
     
-    // group
-    var SVGGroup = function() {
-        this.element = SVGCommon.create('g');
-        this.children = [];
-    };
-    SVGGroup.prototype = {
-        setParent: SVGCommon.setParent,
-        id: SVGCommon.id,
-        css: SVGCommon.css,
-        cssText: SVGCommon.cssText,
-        className: SVGCommon.className,
-        release: SVGCommon.release,
-        child: SVGRoot.prototype.child,
-        removeChild: SVGRoot.prototype.removeChild,
-        
-        fill: SVGCommon.fill,
-        stroke: SVGCommon.stroke,
-        _add: SVGRoot.prototype._add,
-        addLine: SVGRoot.prototype.addLine,
-        addRect: SVGRoot.prototype.addRect,
-        addEllipse: SVGRoot.prototype.addEllipse,
-        addPath: SVGRoot.prototype.addPath,
-        addGroup: SVGRoot.prototype.addGroup
-    };
+    function SVGGroup(el) { SVGHandler.call(this, el); }
+    SVGGroup.prototype = new SVGParent();
+    SVGGroup.prototype.fill = SVGShape.prototype.fill;
+    SVGGroup.prototype.fillRule = SVGShape.prototype.fillRule;
+    SVGGroup.prototype.stroke = SVGShape.prototype.stroke;
+    SVGGroup.prototype.strokeWidth = SVGShape.prototype.strokeWidth;
+    SVGGroup.prototype.dashArray = SVGShape.prototype.dashArray;
+    SVGGroup.prototype.lineCap = SVGShape.prototype.lineCap;
+    SVGGroup.prototype.lineJoin = SVGShape.prototype.lineJoin;
     
-    return SVGRoot;
+    function SVGLine(el) { SVGHandler.call(this, el); }
+    SVGLine.prototype = new SVGShape();
+    SVGLine.prototype.pos = function(x1, y1, x2, y2) { return this.attr({ x1:x1, y1:y1, x2:x2, y2:y2 }); };
+    
+    function SVGRect(el) { SVGHandler.call(this, el); }
+    SVGRect.prototype = new SVGShape();
+    SVGRect.prototype.pos = function(x, y, w, h) { return this.attr({ x:x, y:y, width:w, height:h }); };
+    SVGRect.prototype.radius = function(rx, ry) { return this.attr({ rx:rx, ry:ry||rx }); };
+    
+    function SVGEllipse(el) { SVGHandler.call(this, el); }
+    SVGEllipse.prototype = new SVGShape();
+    SVGEllipse.prototype.pos = function(cx, cy, rx, ry) { return this.attr({ cx:cx, cy:cy, rx:rx, ry:ry||rx }); };
+    
+    function SVGPath(el) { SVGHandler.call(this, el); }
+    SVGPath.prototype = new SVGShape();
+    SVGPath.prototype.addPath = function() { return this.attr('d', [this.attr('d')].concat([].slice.call(arguments)).join(' ')); };
+    SVGPath.prototype.moveTo = function(x, y) { return this.addPath('M', x, y); };
+    SVGPath.prototype.moveBy = function(x, y) { return this.addPath('m', x, y); };
+    SVGPath.prototype.lineTo = function(x, y) { return this.addPath('L', x, y); };
+    SVGPath.prototype.lineBy = function(x, y) { return this.addPath('l', x, y); };
+    SVGPath.prototype.qBezTo = function(x1, y1, x2, y2) { return this.addPath('Q', x1, y1, x2, y2); };
+    SVGPath.prototype.qBezBy = function(x1, y1, x2, y2) { return this.addPath('q', x1, y1, x2, y2); };
+    SVGPath.prototype.cBezTo = function(x1, y1, x2, y2, x3, y3) { return this.addPath('C', x1, y1, x2, y2, x3, y3); };
+    SVGPath.prototype.cBezBy = function(x1, y1, x2, y2, x3, y3) { return this.addPath('c', x1, y1, x2, y2, x3, y3); };
+    SVGPath.prototype.close = function() { return this.addPath('Z'); };
+    SVGPath.prototype.clear = function() { this.element.removeAttribute('d', ''); return this; };
+    
+    function SVGText(el) { SVGHandler.call(this, el); }
+    SVGText.prototype = new SVGShape();
+    SVGText.prototype.pos = function(x, y) { return this.attr({ x:x, y:y }); };
+    SVGText.prototype.text = function(c) {
+        this.element.textContent = c;
+        return this;
+    };
+    SVGText.prototype.fontSize = function(v) { return this.css('font-size', v); };
+    SVGText.prototype.fontFamily = function(v) { return this.css('font-family', v); };
+    SVGText.prototype.fontWeight = function(v) { return this.css('font-weight', v); };
+    
+    return SVGFactory;
 })();
+
+if(typeof module!='undefined' && module.exports) module.exports($VG);
