@@ -21,14 +21,21 @@
 <script>
 {
 	const stage = new V.Stage(new CanvasPaint(document.getElementById('canvas')));
-	
 	const div = new Div();
-	//div.style.border = '4 red';
-	//div.style.textAlign = 'right';
-	
+
 	const img0 = new Img('1.jpg');
 	const img1 = new Img('2.jpg');
 	const img2 = new Img('3.jpg');
+	
+	img0.addListener('click', e=>{
+		console.log('click0', e.isCapture)
+	})
+	img1.addListener('click', e=>{
+		console.log('click1', e.isCapture)
+	})
+	img2.addListener('click', e=>{
+		console.log('click2', e.isCapture)
+	})
 	{
 		let loaded = 0;
 		const cb = _=>++loaded == 3 ? start() : 0;
@@ -50,9 +57,12 @@
 	const start = _=>{
 		let color = 100;
 		let loop = _=>{
+			
 			if(img1.style.margin++>40) img1.style.margin = 10;
 			if(color++<255) div.style.backgroundColor = ['rgb(255', color, color].join(',')+  ')';
 			else color = 100;
+			
+			
 			stage.render();
 			requestAnimationFrame(loop);
 		}

@@ -3,6 +3,15 @@ const CanvasPaint = (([background, stroke, font])=>{
 		constructor(canvas){
 			super(canvas.width, canvas.height);
 			this.cx = canvas.getContext('2d');
+			this.event = {};
+			canvas.addEventListener("click", (e)=>{
+				this.ev('click', e.layerX, e.layerY)
+			})
+		}
+		ev(type, x, y){
+			this.event.click = true;
+			this.event.x = x;
+			this.event.y = y;
 		}
 		static textWidth(display){
 			const c = new CanvasPaint(document.createElement('canvas'));

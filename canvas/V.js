@@ -30,7 +30,9 @@ const V = (_=>{
 		};
 		return Object.assign(Paint, {RESET, BOUND, START, END, IMAGE, RECT, TEXT, image, rect, text});
 	})(N(Symbol, 7));
-
+	const evFlow = {
+		offsetX:0, offsetY:0,
+	};
 	const Stage = class{
 		constructor(paint){
 			if(paint instanceof Paint) readOnly(this, {paint, root:new DisplayContainer()});
@@ -47,7 +49,13 @@ const V = (_=>{
 			this.root[size](width, height);
 			this.root[offset](0, 0);
 			this.paint[reset]();
-			this.root[draw](this.paint);
+			const ev = Object.assign({que:[]}, evFlow, this.paint.event)
+			this.root[draw](this.paint, ev);
+			if(ev.que.length){
+				let i = ev.que.length;
+				while(i--) ev.que[i].dispatch('click', false)
+			}
+			this.paint.event.click = false;
 		}
 	};
 
@@ -63,8 +71,9 @@ const V = (_=>{
 			constructor(target){
 				readOnly(this, {target});
 			}
-			init(type){
+			init(type, isCapture){
 				this.type = type;
+				this.isCapture = isCapture;
 				this[stop] = false;
 				return this;
 			}
@@ -87,15 +96,18 @@ const V = (_=>{
 					style:new Style(isBlock)
 				});
 			}
-			dispatch(type){
+			dispatch(type, isCapture){
 				let listeners;
 				if(listeners = this[listener][type]){
-					let e = this[event].init(type);
+					let e = this[event].init(type, isCapture);
 					for(let listener of listeners){
 						listener(e);
 						if(e.isStopPropagation) return;
 					}
 				}
+			}
+			hasListener(type){
+				return this[listener][type] && this[listener][type].size;
 			}
 			addListener(type, callback){
 				const target = (this[listener][type] || (this[listener][type] = new Set()));
@@ -120,12 +132,24 @@ const V = (_=>{
 				bound.height = rect.height;
 				return bound;
 			}
-			[draw](paint){
+			[draw](paint, e){
+				let {x, y, width, height} = this.boundRect;
+				if(e.click && this.hasListener('click')){
+					if(x < e.x && e.x < x + width && y < e.y && e.y < y + height){
+						e.que.push(this);
+						this.dispatch('click', true)
+					}
+				}
 				paint[start](this);
 				this[DRAW](paint);
 				paint[end](this);
 			}
 			[DRAW](paint){}
+			event(e){
+				if(e.click){
+					
+				}
+			}
 		};
 		return Object.assign(Display, {DRAW, MEASURE, OFFSET});
 	})(N(Symbol, 6));
@@ -160,11 +184,17 @@ const V = (_=>{
 			getChildById(id){
 				return this[ids][display.id] || null;
 			}
-			[draw](paint){
+			[draw](paint, e){
 				paint[start](this);
+				if(e.click && this.hasListener('click')){
+					if(x < e.x && e.x < x + width && y < e.y && e.y < y + height){
+						e.que.push(this);
+						this.dispatch('click', true)
+					}
+				}
 				this[Display.DRAW](paint);
 				paint[end](this);
-				for(let child of this[children]) child[draw](paint);
+				for(let child of this[children]) child[draw](paint, e);
 			}
 			[Display.MEASURE](parentWidth, parentHeight){
 				let totalH = 0, lineW = 0, lineH = 0;
