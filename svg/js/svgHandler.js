@@ -268,6 +268,26 @@ var $VG = (function() {
         for(; i<l; i++) this.addPath('s', a[i], a[++i], a[++i], a[++i]);
         return this;
     };
+    SVGPath.prototype.arcTo = function() {
+        var a = arguments, l=a.length-1, i=0;
+        while(i<l) this.addPath('A', a[i++], a[i++], a[i++], a[i++], a[i++], a[i++], a[i++]);
+        return this;
+    };
+    SVGPath.prototype.arcBy = function() {
+        var a = arguments, l=a.length-1, i=0;
+        while(i<l) this.addPath('a', a[i++], a[i++], a[i++], a[i++], a[i++], a[i++], a[i++]);
+        return this;
+    };
+    SVGPath.prototype.iArc = function(cx, cy, rx, ry, d1, d2) {
+        var _ = function(d) { 
+            var rad = (d-90)*Math.PI/180;
+            return { x: cx + rx*Math.cos(rad), y: cy + ry*Math.sin(rad) };
+        },
+        head = _(d2), tail = _(d1),
+        sweep = (d2-d1>180)|0;
+        this.moveTo(head.x, head.y);
+        return this.arcTo(rx, ry, 0, sweep, 0, tail.x, tail.y);
+    };
     SVGPath.prototype.close = function() { return this.addPath('Z'); };
     SVGPath.prototype.clear = function() { this.element.removeAttribute('d'); return this; };
     

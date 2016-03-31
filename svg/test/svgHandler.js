@@ -27,6 +27,7 @@ svg.addPath().moveTo(10, 110).lineTo(90, 110, 10, 190)
              .moveTo(110, 110).lineBy(80, 80, -80, 0, 80, -80).close();
 $VG('<path>').moveTo(210, 110).cBezTo(210, 150, 290, 150, 290, 190)
              .moveTo(310, 110).qBezTo(310, 150, 350, 150, 390, 190, 350, 150, 310, 110)
+             .iArc(450, 150, 30, 50, 0, 135)
              .appendTo(svg);
 
 
@@ -44,6 +45,6 @@ $VG('.clsLine').stroke('purple');
 svg.addGroup().fill('none').stroke('black').dashArray(1, 1).append('text');
 
 // transform
-$VG('path')[1].scale(2, 2).rotate(30).rotate(-25, 100, 100)
-    .flattenMatrix()
-   // .attr('vector-effect', 'non-scaling-stroke');
+//$VG('path')[1].scale(2, 2).rotate(30).rotate(-25, 100, 100)
+//    .flattenMatrix()
+//    .attr('vector-effect', 'non-scaling-stroke');
