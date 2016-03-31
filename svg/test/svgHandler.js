@@ -33,7 +33,14 @@ $VG('<path>').moveTo(210, 110).cBezTo(210, 150, 290, 150, 290, 190)
 
 // textㅣ
 svg.addText().text('hello, s65!').pos(10, 210).fill('blue');
-svg.addText().text('BsideSoft x Pikicast').pos(10, 250).fontFamily('Courier New').fontSize('30pt').fontWeight('bolder');
+svg.addText().text('BsideSoft x Pikicast')
+             .pos(10, 250)
+             .fontFamily('Courier New')
+             .fontSize('30pt')
+             .fontWeight('bolder')
+             .click(function(e) {
+                alert(this.text());
+            });
 
 // collection
 svg.find('path').stroke('blue').strokeWidth(3).dashArray(1, 4).lineCap('round').lineJoin('round').fill('yellow');
@@ -45,6 +52,6 @@ $VG('.clsLine').stroke('purple');
 svg.addGroup().fill('none').stroke('black').dashArray(1, 1).append('text');
 
 // transform
-//$VG('path')[1].scale(2, 2).rotate(30).rotate(-25, 100, 100)
-//    .flattenMatrix()
-//    .attr('vector-effect', 'non-scaling-stroke');
+$VG('path')[1].scale(2, 2).rotate(30).rotate(-25, 100, 100)
+    .flattenMatrix()
+    .attr('vector-effect', 'non-scaling-stroke');

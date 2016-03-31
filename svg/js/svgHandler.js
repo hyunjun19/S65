@@ -96,7 +96,16 @@ var $VG = (function() {
             t = SVGFactory(t);
             if(t instanceof SVGHandler)
                 this.element.insertAfter(t.element);
-        }
+        },
+        on: function(t, l) {
+            this.element.addEventListener(t, l.bind(this));
+            return this;
+        },
+        click: function(l) { return this.on('click', l); },
+        mouseover: function(l) { return this.on('mouseover', l); },
+        mouseout: function(l) { return this.on('mouseout', l); },
+        mousedown: function(l) { return this.on('mousedown', l); },
+        mouseout: function(l) { return this.on('mouseout', l); }
     };
     
     // common props for SVG shapes
@@ -295,8 +304,12 @@ var $VG = (function() {
     SVGText.prototype = new SVGShape();
     SVGText.prototype.pos = function(x, y) { return this.attr({ x:x, y:y }); };
     SVGText.prototype.text = function(c) {
-        this.element.textContent = c;
-        return this;
+        if(c) {
+            this.element.textContent = c;
+            return this;
+        } else {
+            return this.element.textContent;
+        }
     };
     SVGText.prototype.fontSize = function(v) { return this.css('font-size', v); };
     SVGText.prototype.fontFamily = function(v) { return this.css('font-family', v); };
