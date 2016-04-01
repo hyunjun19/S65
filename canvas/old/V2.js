@@ -1,42 +1,15 @@
-//obj.a = 3;
-//Object.defineProperty(obj, 'a', {
-//  value: 3
-//  //, writable: true,
-//  //enumeble: true
-//});
-//
-//{
-//  get: function(){ return this._a; },
-//// set: function(v){ this._a = v; },
-//  enumeble: true
-//}
-//
-//Object.defineProperties(obj, {
-//  a: {
-//    value: 3
-//  },
-//  b: {
-//    value: 5
-//  }
-//});
-//let V;
-//{
-//  V = ...;
-//}
 const V = (()=>{
 	const readOnly = (target, v)=>{
 		for(let k in v) v[k] = {value:v[k]};
 		Object.defineProperties(target, v);
 	};
-	const error = msg=>throw msg;
+	const error = msg=> { throw msg; };
 	const N = (factory,cnt)=>Array.from('0'.repeat(cnt)).map(_=>factory());
 
 
 	const [offset, size, draw, bound, start, end, reset, image, rect, text] = N(Symbol, 10);
-	
-	const Paint = (([RESET, BOUND, START, END, IMAGE, RECT, TEXT])=>{
-    //const [RESET, BOUND, START, END, IMAGE, RECT, TEXT] = N(Symbol, 7);
 
+	const Paint = (([RESET, BOUND, START, END, IMAGE, RECT, TEXT])=>{
 		const Paint = class{
 			constructor(width, height){
 				this[size](width, height);
@@ -46,27 +19,28 @@ const V = (()=>{
 			}
 			[bound]({x, y, width, height}){this[BOUND](x, y, width, height);}
 			reset(){this[RESET]();}
-			
+
 			[start](display){this[START](display);}
 			[end](display){this[END](display);}
+			// 구상클래스에서 사용함
 			[image](display){this[IMAGE](display);}
 			[rect](display){this[RECT](display);}
 			[text](display){this[TEXT](display);}
 		};
-		return Object.assign(Paint, {RESET, BOUND, START, END, IMAGE, RECT, TEXT});
+		return Object.assign(Paint, {RESET, BOUND, START, END, IMAGE, RECT, TEXT, image, rect, text});
 	})(N(Symbol, 7));
-	
+
 	const Stage = class{
 		constructor(paint){
 			if(paint instanceof Paint) readOnly(this, {paint, root:new DisplayContainer()});
 			else error();
 		}
-		
+
 		addChild(display){this.root.addChild(display);}
 		removeChild(display){this.root.removeChild(display);}
 		getChildAt(index){this.root.getChildAt(index);}
 		getChildById(id){this.root.getChildById(id);}
-		
+
 		render(){
 			let {width, height} = this.root[Display.MEASURE](this.paint.width, this.paint.height);
 			this.root[size](width, height);
@@ -75,7 +49,7 @@ const V = (()=>{
 			this.root[Display.DRAW](this.paint);
 		}
 	};
-	
+
 	const Display = (([event, listener, boundRect, DRAW, MEASURE, OFFSET])=>{
 		let uuid = 0;
 		const bound = {};
@@ -84,7 +58,7 @@ const V = (()=>{
 				this.display = isBlock ? 'block' : 'inline';
 			}
 		};
-		const Event =  (stop=>class{
+		const Event = (stop=>class{
 			constructor(target){
 				readOnly(this, {target});
 			}
@@ -128,13 +102,13 @@ const V = (()=>{
 			removeListener(type, callback = null){
 				const target = this[listener][type];
 				if(!target) return;
-				if(listener) target.delete(callback);
+				if(callback) target.delete(callback);
 				else target.clear();
 			}
-			
+
 			[offset](x, y){this[boundRect].x = x, this[boundRect].y = y;}
 			[size](width, height){this[boundRect].width = width, this[boundRect].height = height;}
-				
+
 			get boundRect(){
 				const rect = this[boundRect];
 				if(!this.style._margin) return rect;
@@ -144,7 +118,7 @@ const V = (()=>{
 				bound.height = rect.height;
 				return bound;
 			}
-			
+
 			[draw](paint){
 				paint[start](this);
 				this[DRAW](paint);
@@ -154,9 +128,9 @@ const V = (()=>{
 		};
 		return Object.assign(Display, {DRAW, MEASURE, OFFSET});
 	})(N(Symbol, 6));
-	
-	const DisplayContainer = ([children, ids]=>class extends Display{
-		constructor(isBlock){
+
+	const DisplayContainer = (([children, ids])=>class extends Display {
+		constructor(isBlock) {
 			super(isBlock);
 			readOnly(this, {
 				[children]:new Set(),
@@ -166,10 +140,10 @@ const V = (()=>{
 		addChild(display){
 			if(!(display instanceof Display)) return;
 			this.removeChild(display);
-			
+
 			this[children].add(display);
 			this[ids][display.id] = display;
-			
+
 		}
 		removeChild(display){
 			if(!(display instanceof Display) || !this[ids][display.id]) return;
@@ -179,7 +153,7 @@ const V = (()=>{
 		getChildAt(index){
 			if(this[children].size <= index) return null;
 			let idx = 0;
-			return  ? null : this[children].forEach((v1, v2, set)=>idx++ == index ? set.delete(v1) : 0);
+			return this[children].forEach((v1, v2, set)=>idx++ == index ? set.delete(v1) : 0);
 		}
 		getChildById(id){
 			return this[ids][display.id] || null;
@@ -188,7 +162,7 @@ const V = (()=>{
 			super[DRAW](paint);
 			for(let child of this[children]) child[draw](paint);
 		}
-		[MEASURE](parentWidth, parentHeight){
+		[Display.MEASURE](parentWidth, parentHeight){
 			let totalH = 0, lineW = 0, lineH = 0;
 			Css.size(this.style, parentWidth, parentHeight);
 			for(let child of this[CHILDREN]){
@@ -222,19 +196,19 @@ const V = (()=>{
 			}
 			if(lineH) totalH += lineH;
 			switch(this.style.textAlign){
-			case'right':
-				let i = this[CHILDREN].length, j = parentWidth;
-				while(i--){
-					let c = this[CHILDREN][i], rect = c[BOUNDRECT];
-					rect.x = j -= rect.width + c.style._margin[1] + c.style._margin[3];
-				}
-				break;
-			case'justify':
+				case'right':
+					let i = this[CHILDREN].length, j = parentWidth;
+					while(i--){
+						let c = this[CHILDREN][i], rect = c[BOUNDRECT];
+						rect.x = j -= rect.width + c.style._margin[1] + c.style._margin[3];
+					}
+					break;
+				case'justify':
 			}
 			return {width:parentWidth, height:totalH};
 		}
 	})(N(Symbol, 2));
-	
+
 	return v = {
 		Event, Display, DisplayContainer, Stage,
 		spread:()=>{

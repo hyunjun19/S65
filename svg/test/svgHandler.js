@@ -23,17 +23,35 @@ $VG('<ellipse>').stroke('black').strokeWidth(2).dashArray(4, 4).fill('yellow').p
 $VG('<ellipse cx="250" cy="50" rx="10" ry="10" fill="red" stroke="black" stroke-width="2"/>').appendTo(svg);
 
 // path && collection
-svg.addPath().moveTo(10, 110).lineTo(90, 110).lineTo(10, 190);
-svg.addPath().moveTo(110, 110).lineBy(0, 80).lineBy(80, 0);
-$VG('<path>').moveTo(210, 110).cBezTo(210, 150, 290, 150, 290, 190).appendTo(svg);
+svg.addPath().moveTo(10, 110).lineTo(90, 110, 10, 190)
+             .moveTo(110, 110).lineBy(80, 80, -80, 0, 80, -80).close();
+$VG('<path>').moveTo(210, 110).cBezTo(210, 150, 290, 150, 290, 190)
+             .moveTo(310, 110).qBezTo(310, 150, 350, 150, 390, 190, 350, 150, 310, 110)
+             .iArc(450, 150, 30, 50, 0, 135)
+             .appendTo(svg);
+
 
 // textㅣ
 svg.addText().text('hello, s65!').pos(10, 210).fill('blue');
-svg.addText().text('BsideSoft x Pikicast').pos(10, 250).fontFamily('Courier New').fontSize('30pt').fontWeight('bolder');
+svg.addText().text('BsideSoft x Pikicast')
+             .pos(10, 250)
+             .fontFamily('Courier New')
+             .fontSize('30pt')
+             .fontWeight('bolder')
+             .click(function(e) {
+                alert(this.text());
+            });
 
 // collection
 svg.find('path').stroke('blue').strokeWidth(3).dashArray(1, 4).lineCap('round').lineJoin('round').fill('yellow');
+svg.find('path')[1].dashArray(1).fill('none');
 $VG('ellipse').css('opacity', '0.2');
+$VG('.clsLine').stroke('purple');
 
 // group
 svg.addGroup().fill('none').stroke('black').dashArray(1, 1).append('text');
+
+// transform
+$VG('path')[1].scale(2, 2).rotate(30).rotate(-25, 100, 100)
+    .flattenMatrix()
+    .attr('vector-effect', 'non-scaling-stroke');
