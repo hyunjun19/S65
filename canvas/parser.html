@@ -34,9 +34,11 @@ const htmlParse = (_=>{
 		console.log(parse(v))
 		v = {nodes:[parse(v).firstChild], parent:stage};
 		do{
+			let parent = v.parent;
+
 			for(let i = 0, j = v.nodes.length; i < j; i++){
-				let parent = v.parent, node = v.nodes[i], el, attr = {}, k;
-				console.log(node.nodeName, node.nodeType)
+				let node = v.nodes[i], el, attr = {};
+
 				if(node.nodeType == 1){
 					if(node.attributes && node.attributes.length){
 						for(let {name, value} of attrGen(node.attributes)) attr[name] = value;
@@ -49,6 +51,9 @@ const htmlParse = (_=>{
 					if(el){
 						console.log(el, el.tagName, parent.tagName)
 						if(attr.style){
+							let style = {};
+							// style parser...
+							for(let key of style) el.style[key] = style[key];
 						}
 						parent.addChild(el);
 						if(node.childNodes && node.childNodes.length) stack.push({parent:el, nodes:node.childNodes});
@@ -62,7 +67,7 @@ const htmlParse = (_=>{
 	const stage = new V.Stage(new CanvasPaint(document.getElementById('canvas')));
 	htmlParse(stage, `
 		<div>
-			<img src="1.jpg"/>
+			<img src="1.jpg" style="background-color:#F00;margin:10px"/>
 			<img src="2.jpg"/>
 			<img src="3.jpg"/>
 			<span>안녕하세요</span>
